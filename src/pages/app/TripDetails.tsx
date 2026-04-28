@@ -2,11 +2,11 @@ import {useEffect, useState} from "react";
 import {useNavigate, useParams} from "react-router-dom";
 import {arrayUnion, deleteDoc, doc, onSnapshot, updateDoc} from "firebase/firestore";
 import {db} from "@/config/firebase";
-import type {Activity, DayPlan, Expense, Trip, TripMember} from "@/types";
+import type {Activity, ChecklistItem, DayPlan, Expense, Trip, TripMember} from "@/types";
 import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs";
 import {ManageDayModal} from "@/components/features/ManageDayModal";
 import {ManageActivityModal} from "@/components/features/ManageActivityModal";
-import {Calendar, Loader2, MapPin, MoreVertical, RefreshCcw, Eraser, Trash2} from "lucide-react";
+import {Calendar, Eraser, Loader2, MapPin, MoreVertical, Trash2} from "lucide-react";
 import {Button} from "@/components/ui/button";
 import {
     AlertDialog,
@@ -76,14 +76,45 @@ export function TripDetails() {
         }
     };
 
-    const handleResetWithAI = async () => {
-        if (!id) return;
-        await updateDoc(doc(db, "trips", id), {
-            itinerary: [],
-            globalChecklist: [],
-            status: 'START'
-        });
+    const handleLinkMember = async (ghostUid: string, realMember: TripMember) => {
+        if (!id || !trip) return;
+
+        // 1. Remove o Fantasma da lista de membros
+        const updatedMembers = trip.members.filter(m => m.uid !== ghostUid);
+
+        // 2. Atualiza todas as DESPESAS: onde era o ghostUid, agora é o realMember.uid
+        const updatedExpenses = (trip.expenses || []).map(exp => ({
+            ...exp,
+            paidBy: exp.paidBy === ghostUid ? realMember.uid : exp.paidBy,
+            participants: (exp.participants || []).map(p => p === ghostUid ? realMember.uid : p)
+        }));
+
+        // 3. Atualiza todos os ACERTOS (Settlements): onde era o ghostUid, agora é o realMember.uid
+        const updatedSettlements = (trip.settlements || []).map(s => ({
+            ...s,
+            from: s.from === ghostUid ? realMember.uid : s.from,
+            to: s.to === ghostUid ? realMember.uid : s.to
+        }));
+
+        try {
+            await updateDoc(doc(db, "trips", id), {
+                members: updatedMembers,
+                expenses: updatedExpenses,
+                settlements: updatedSettlements
+            });
+        } catch (error) {
+            console.error("Erro ao vincular membro:", error);
+        }
     };
+
+    // const handleResetWithAI = async () => {
+    //     if (!id) return;
+    //     await updateDoc(doc(db, "trips", id), {
+    //         itinerary: [],
+    //         globalChecklist: [],
+    //         status: 'START'
+    //     });
+    // };
 
     const handleClearItinerary = async () => {
         if (!id) return;
@@ -127,14 +158,6 @@ export function TripDetails() {
         const updatedMembers = trip.members.filter(m => m.uid !== uid);
         const updatedIds = (trip.members_ids || []).filter(mId => mId !== uid);
         await updateDoc(doc(db, "trips", id), { members: updatedMembers, members_ids: updatedIds });
-    };
-
-    const handleLinkMember = async (ghostUid: string, realUser: any) => {
-        if (!id || !trip) return;
-        const updatedMembers = trip.members.map(m =>
-            m.uid === ghostUid ? { uid: realUser.uid, name: realUser.displayName, isGhost: false, role: 'MEMBER' as const } : m
-        );
-        await updateDoc(doc(db, "trips", id), { members: updatedMembers, members_ids: arrayUnion(realUser.uid) });
     };
 
     // --- HANDLERS DE ROTEIRO ---
@@ -182,6 +205,30 @@ export function TripDetails() {
         await updateDoc(doc(db, "trips", id), { itinerary: newItinerary });
     };
 
+    const handleAddChecklistItem = async (task: string, category: string) => {
+        if (!id || !trip) return;
+
+        const newItem: ChecklistItem = {
+            id: crypto.randomUUID(),
+            task,
+            category,
+            completed: false
+        };
+
+        await updateDoc(doc(db, "trips", id), {
+            globalChecklist: arrayUnion(newItem)
+        });
+    };
+
+    const handleDeleteChecklistItem = async (itemId: string) => {
+        if (!id || !trip) return;
+
+        const updated = trip.globalChecklist.filter(i => i.id !== itemId);
+        await updateDoc(doc(db, "trips", id), {
+            globalChecklist: updated
+        });
+    };
+
     if (loading) return <div className="flex h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-primary/50" size={32} /></div>;
     if (!trip) return null;
 
@@ -208,22 +255,22 @@ export function TripDetails() {
                         <Button variant="ghost" size="icon" className="rounded-full shrink-0 ml-4"><MoreVertical size={20} /></Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-56 bg-card border-border/40 rounded-xl p-1 shadow-2xl">
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <div className="relative flex cursor-pointer select-none items-center rounded-lg px-3 py-2.5 text-[10px] font-bold uppercase tracking-widest outline-none transition-colors hover:bg-primary/10 hover:text-primary gap-2">
-                                    <RefreshCcw size={14} /> Gerar com IA
-                                </div>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent className="bg-card border-border/40 rounded-2xl">
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle className="font-bold uppercase tracking-tight">Gerar com IA?</AlertDialogTitle>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel className="text-xs font-bold uppercase tracking-widest">Cancelar</AlertDialogCancel>
-                                    <AlertDialogAction onClick={handleResetWithAI} className="bg-primary text-xs font-bold uppercase tracking-widest">Gerar</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
+                        {/*<AlertDialog>*/}
+                        {/*    <AlertDialogTrigger asChild>*/}
+                        {/*        <div className="relative flex cursor-pointer select-none items-center rounded-lg px-3 py-2.5 text-[10px] font-bold uppercase tracking-widest outline-none transition-colors hover:bg-primary/10 hover:text-primary gap-2">*/}
+                        {/*            <RefreshCcw size={14} /> Gerar com IA*/}
+                        {/*        </div>*/}
+                        {/*    </AlertDialogTrigger>*/}
+                        {/*    <AlertDialogContent className="bg-card border-border/40 rounded-2xl">*/}
+                        {/*        <AlertDialogHeader>*/}
+                        {/*            <AlertDialogTitle className="font-bold uppercase tracking-tight">Gerar com IA?</AlertDialogTitle>*/}
+                        {/*        </AlertDialogHeader>*/}
+                        {/*        <AlertDialogFooter>*/}
+                        {/*            <AlertDialogCancel className="text-xs font-bold uppercase tracking-widest">Cancelar</AlertDialogCancel>*/}
+                        {/*            <AlertDialogAction onClick={handleResetWithAI} className="bg-primary text-xs font-bold uppercase tracking-widest">Gerar</AlertDialogAction>*/}
+                        {/*        </AlertDialogFooter>*/}
+                        {/*    </AlertDialogContent>*/}
+                        {/*</AlertDialog>*/}
 
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
@@ -296,9 +343,13 @@ export function TripDetails() {
                     <ChecklistTab
                         checklist={trip.globalChecklist}
                         onToggleItem={async (itemId, current) => {
-                            const updated = trip.globalChecklist.map(i => i.id === itemId ? { ...i, completed: !current } : i);
+                            const updated = trip.globalChecklist.map(i =>
+                                i.id === itemId ? { ...i, completed: !current } : i
+                            );
                             await updateDoc(doc(db, "trips", id!), { globalChecklist: updated });
                         }}
+                        onAddItem={handleAddChecklistItem}
+                        onDeleteItem={handleDeleteChecklistItem}
                     />
                 </TabsContent>
 

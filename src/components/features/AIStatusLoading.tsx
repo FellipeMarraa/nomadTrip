@@ -112,9 +112,9 @@ export function AIStatusLoading() {
                 </div>
             </div>
 
-            <p className="mt-12 text-[10px] font-medium text-muted-foreground/50 uppercase tracking-widest italic">
-                Aguardando resposta do servidor...
-            </p>
+            {/*<p className="mt-12 text-[10px] font-medium text-muted-foreground/50 uppercase tracking-widest italic">*/}
+            {/*    Aguardando resposta do servidor...*/}
+            {/*</p>*/}
         </div>
     );
 }
