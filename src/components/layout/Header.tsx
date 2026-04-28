@@ -1,5 +1,5 @@
 import {useAuthStore} from "@/store/useAuthStore";
-import {Bell, CreditCard, LayoutDashboard, LogOut, Map, Menu, Plane, Settings} from "lucide-react";
+import {Bell, LayoutDashboard, LogOut, Menu, Plane} from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -21,7 +21,7 @@ export function Header() {
 
     const navigation = [
         { name: "Dashboard", href: "/", icon: LayoutDashboard },
-        { name: "Minhas Viagens", href: "/trips", icon: Map },
+        // { name: "Minhas Viagens", href: "/trips", icon: Map },
     ];
 
     return (
@@ -150,12 +150,12 @@ export function Header() {
                                 </div>
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem asChild className="cursor-pointer gap-2 rounded-lg m-1">
-                                <Link to="/settings"><Settings size={16} /> Configurações</Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem asChild className="cursor-pointer gap-2 rounded-lg m-1">
-                                <Link to="/wallet"><CreditCard size={16} /> Faturamento</Link>
-                            </DropdownMenuItem>
+                            {/*<DropdownMenuItem asChild className="cursor-pointer gap-2 rounded-lg m-1">*/}
+                            {/*    <Link to="/settings"><Settings size={16} /> Configurações</Link>*/}
+                            {/*</DropdownMenuItem>*/}
+                            {/*<DropdownMenuItem asChild className="cursor-pointer gap-2 rounded-lg m-1">*/}
+                            {/*    <Link to="/wallet"><CreditCard size={16} /> Faturamento</Link>*/}
+                            {/*</DropdownMenuItem>*/}
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                                 onClick={logout}

@@ -1,11 +1,12 @@
-import {Check, ChevronDown, Luggage, Plus, Trash2} from "lucide-react";
-import {cn} from "@/lib/utils";
-import {Button} from "@/components/ui/button";
-import {useState} from "react";
-import type {ChecklistItem} from "@/types";
-import {ManageChecklistItemModal} from "@/components/features/ManageChecklistItemModal";
-import {Collapsible, CollapsibleContent, CollapsibleTrigger,} from "@/components/ui/collapsible";
-import {ScrollArea} from "@/components/ui/scroll-area";
+import { Check, ChevronDown, Luggage, Plus, Trash2, User } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import type { ChecklistItem } from "@/types";
+import { ManageChecklistItemModal } from "@/components/features/ManageChecklistItemModal";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useAuthStore } from "@/store/useAuthStore";
 
 interface ChecklistTabProps {
     checklist: ChecklistItem[];
@@ -16,18 +17,28 @@ interface ChecklistTabProps {
 
 export function ChecklistTab({ checklist, onToggleItem, onAddItem, onDeleteItem }: ChecklistTabProps) {
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const { user } = useAuthStore();
 
-    const categories = Array.from(new Set(checklist?.map(item => item.category || "Geral")));
+    const myItems = checklist?.filter(item =>
+        item.userId === user?.uid || (!item.userId && user?.uid)
+    ) || [];
+
+    const categories = Array.from(new Set(myItems.map(item => item.category || "Geral")));
 
     return (
         <div className="mt-6 space-y-4 animate-in fade-in duration-500">
             {/* HEADER FIXO */}
             <div className="flex items-center justify-between px-2 bg-background/95 backdrop-blur-sm sticky top-0 z-10 py-2">
-                <div className="flex items-center gap-2">
-                    <Luggage size={16} className="text-primary" />
-                    <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                        Bagagem ({checklist?.filter(i => i.completed).length}/{checklist?.length})
-                    </h3>
+                <div className="flex flex-col">
+                    <div className="flex items-center gap-2">
+                        <User size={14} className="text-primary" />
+                        <h3 className="text-[10px] font-black uppercase tracking-widest text-primary">
+                            Minha Bagagem
+                        </h3>
+                    </div>
+                    <span className="text-[9px] font-bold text-muted-foreground uppercase">
+                        {myItems.filter(i => i.completed).length} de {myItems.length} itens prontos
+                    </span>
                 </div>
                 <Button
                     onClick={() => setIsModalOpen(true)}
@@ -39,10 +50,10 @@ export function ChecklistTab({ checklist, onToggleItem, onAddItem, onDeleteItem 
                 </Button>
             </div>
 
-            {checklist?.length > 0 ? (
+            {myItems.length > 0 ? (
                 <div className="space-y-3">
                     {categories.map(category => {
-                        const categoryItems = checklist.filter(item => (item.category || "Geral") === category);
+                        const categoryItems = myItems.filter(item => (item.category || "Geral") === category);
                         const completedCount = categoryItems.filter(i => i.completed).length;
 
                         return (
@@ -68,7 +79,7 @@ export function ChecklistTab({ checklist, onToggleItem, onAddItem, onDeleteItem 
                                     )}>
                                         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 p-1">
                                             {categoryItems.map((item) => (
-                                                <div key={item.id} className="group flex items-center gap-3 p-3 rounded-xl border border-border/40 bg-card/30 hover:border-primary/40 transition-all">
+                                                <div key={item.id} className="group flex items-center gap-3 p-3.5 rounded-2xl border border-border/40 bg-card/30 hover:border-primary/40 transition-all">
                                                     <div
                                                         onClick={() => onToggleItem(item.id, item.completed)}
                                                         className={cn(
@@ -104,13 +115,13 @@ export function ChecklistTab({ checklist, onToggleItem, onAddItem, onDeleteItem 
             ) : (
                 <div className="py-20 text-center border border-dashed border-border/40 rounded-[32px] bg-muted/5">
                     <Luggage size={32} className="mx-auto text-muted-foreground/20 mb-3" />
-                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Sua bagagem está vazia</p>
+                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Sua bagagem individual está vazia</p>
                     <Button
                         onClick={() => setIsModalOpen(true)}
                         variant="link"
                         className="text-primary text-[10px] font-black uppercase mt-2"
                     >
-                        Começar a listar
+                        Começar minha lista
                     </Button>
                 </div>
             )}

@@ -70,7 +70,8 @@ export interface ChecklistItem {
     task: string;
     completed: boolean;
     category: string;
-    updatedBy?: string; // UID do membro que marcou
+    userId: string;
+    updatedBy?: string;
 }
 
 export interface Coupon {

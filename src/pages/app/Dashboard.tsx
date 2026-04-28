@@ -52,11 +52,10 @@ export function Dashboard() {
                     {/* TEMPORIZADOR ESTILIZADO */}
                     {nextTripCountdown && (
                         <div className="flex items-center gap-2 text-primary animate-pulse-subtle">
-                            <Timer size={14} strokeWidth={2.5} />
                             <span className="text-[10px] font-black uppercase tracking-[0.15em]">
                                 {nextTripCountdown.days === 0
-                                    ? "É hoje o embarque!"
-                                    : `Faltam ${nextTripCountdown.days} dias para ${nextTripCountdown.destination}`}
+                                    ? <> <Timer size={14} strokeWidth={2.5} /> "É hoje o embarque!" </>
+                                    : ``}
                             </span>
                         </div>
                     )}

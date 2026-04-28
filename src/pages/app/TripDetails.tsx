@@ -206,18 +206,24 @@ export function TripDetails() {
     };
 
     const handleAddChecklistItem = async (task: string, category: string) => {
-        if (!id || !trip) return;
+        // A verificação abaixo "acalma" o compilador
+        if (!id || !trip || !user?.uid) return;
 
         const newItem: ChecklistItem = {
             id: crypto.randomUUID(),
             task,
             category,
-            completed: false
+            completed: false,
+            userId: user.uid
         };
 
-        await updateDoc(doc(db, "trips", id), {
-            globalChecklist: arrayUnion(newItem)
-        });
+        try {
+            await updateDoc(doc(db, "trips", id), {
+                globalChecklist: arrayUnion(newItem)
+            });
+        } catch (error) {
+            console.error("Erro ao adicionar item:", error);
+        }
     };
 
     const handleDeleteChecklistItem = async (itemId: string) => {

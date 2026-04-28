@@ -36,18 +36,15 @@ export function CostsTab({ trip, onAddExpense, onDeleteExpense, getFormattedDate
         return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
     };
 
-    // 1. Cálculo de Balanço Líquido (Gastos - Pagamentos/Settlements)
-    // Dentro da CostsTab.tsx
     const stats = useMemo(() => {
         const balances: Record<string, number> = {};
-        const originalDebts: Record<string, number> = {}; // Para saber quem REALMENTE deve
+        const originalDebts: Record<string, number> = {};
 
         trip.members.forEach(m => {
             balances[m.uid] = 0;
             originalDebts[m.uid] = 0;
         });
 
-        // 1. Calcula dívidas brutas
         expenses.forEach(exp => {
             const amount = Number(exp.amount) || 0;
             const participants = exp.participants || [];
@@ -57,15 +54,12 @@ export function CostsTab({ trip, onAddExpense, onDeleteExpense, getFormattedDate
                 if (pUid !== exp.paidBy) {
                     balances[pUid] -= share;
                     balances[exp.paidBy] += share;
-                    originalDebts[pUid] -= share; // Guarda a dívida real
+                    originalDebts[pUid] -= share;
                 }
             });
         });
 
-        // 2. Só aplica o "Recebi" se a dívida original existir
         settlements.forEach(settle => {
-            // Se a dívida original de quem pagou sumiu (porque a despesa foi deletada),
-            // a gente ignora esse pagamento no cálculo visual.
             if (Math.abs(originalDebts[settle.from]) > 0.01) {
                 balances[settle.from] += settle.amount;
                 balances[settle.to] -= settle.amount;
@@ -92,10 +86,10 @@ export function CostsTab({ trip, onAddExpense, onDeleteExpense, getFormattedDate
     const filteredExpenses = expenses.filter(e => e.dayNumber === parseInt(selectedDay));
 
     return (
-        <div className="mt-6 space-y-6 animate-in fade-in duration-500">
+        <div className="mt-6 space-y-6 animate-in fade-in duration-500 px-1">
             {/* CARDS DE RESUMO DE ACERTOS */}
             <div className="space-y-3">
-                <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-2">
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">
                     Acertos da Viagem
                 </h3>
                 <div className="grid grid-cols-2 gap-2">
@@ -108,25 +102,36 @@ export function CostsTab({ trip, onAddExpense, onDeleteExpense, getFormattedDate
                             <button
                                 key={member.uid}
                                 onClick={() => setViewingMember(member)}
-                                className="flex items-center justify-between p-3 rounded-2xl border border-border/40 bg-card/40 text-left transition-all hover:border-primary/40 active:scale-95 group"
+                                className="flex flex-col gap-3 p-3.5 rounded-[24px] border border-border/40 bg-card/40 text-left transition-all hover:border-primary/40 active:scale-[0.97] group"
                             >
-                                <div className="flex items-center gap-2 min-w-0">
-                                    <div className="h-8 w-8 shrink-0 rounded-xl bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary uppercase">
-                                        {member.name.substring(0, 2)}
+                                <div className="flex items-center gap-2.5 w-full">
+                                    {/* FOTO OU INICIAL */}
+                                    <div className="h-9 w-9 shrink-0 rounded-xl bg-primary/10 flex items-center justify-center overflow-hidden border border-border/40 shadow-sm">
+                                        {member.photoURL ? (
+                                            <img src={member.photoURL} alt="" className="h-full w-full object-cover" />
+                                        ) : (
+                                            <span className="text-[10px] font-black text-primary uppercase">
+                                                {member.name.substring(0, 2)}
+                                            </span>
+                                        )}
                                     </div>
-                                    <div className="flex flex-col truncate">
-                                        <span className="text-[10px] font-bold truncate uppercase leading-none mb-1">{member.name.split(' ')[0]}</span>
+
+                                    <div className="flex flex-col min-w-0 flex-1">
+                                        <span className="text-[10px] font-black truncate uppercase tracking-tight text-foreground/90">
+                                            {member.name.split(' ')[0]}
+                                        </span>
                                         <span className={cn(
-                                            "text-[8px] font-black uppercase px-1.5 py-0.5 rounded w-fit",
-                                            isCredit ? "bg-emerald-500/10 text-emerald-500" : isDebt ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground"
+                                            "text-[7px] font-black uppercase px-1.5 py-0.5 rounded-md w-fit mt-0.5",
+                                            isCredit ? "bg-emerald-500/10 text-emerald-500" : isDebt ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground/60"
                                         )}>
                                             {isCredit ? "Crédito" : isDebt ? "Dívida" : "Quitado"}
                                         </span>
                                     </div>
                                 </div>
+
                                 <div className={cn(
-                                    "text-xs font-black shrink-0",
-                                    isCredit ? "text-emerald-500" : isDebt ? "text-destructive" : "text-muted-foreground"
+                                    "text-xs font-black tracking-tighter mt-auto border-t border-border/10 pt-2 w-full flex justify-end",
+                                    isCredit ? "text-emerald-500" : isDebt ? "text-destructive" : "text-muted-foreground/40"
                                 )}>
                                     {formatCurrency(Math.abs(balance))}
                                 </div>
@@ -138,18 +143,18 @@ export function CostsTab({ trip, onAddExpense, onDeleteExpense, getFormattedDate
 
             {/* SELETOR DE DIAS */}
             <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-2">Filtrar por data</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">Filtrar por data</label>
                 <Select value={selectedDay} onValueChange={setSelectedDay}>
-                    <SelectTrigger className="w-full h-12 bg-card/40 border-border/40 rounded-xl px-4 text-xs font-bold uppercase tracking-tight focus:ring-0">
+                    <SelectTrigger className="w-full h-12 bg-card/40 border-border/40 rounded-2xl px-4 text-xs font-bold uppercase tracking-tight focus:ring-0">
                         <div className="flex items-center gap-2">
                             <CalendarDays size={16} className="text-primary" />
                             <SelectValue placeholder="Selecione o dia" />
                         </div>
                     </SelectTrigger>
-                    <SelectContent className="bg-card border-border/40 rounded-xl">
+                    <SelectContent className="bg-card border-border/40 rounded-2xl">
                         {itinerary.length > 0 ? (
                             itinerary.map((day) => (
-                                <SelectItem key={day.dayNumber} value={day.dayNumber.toString()} className="text-xs font-bold uppercase py-3">
+                                <SelectItem key={day.dayNumber} value={day.dayNumber.toString()} className="text-[11px] font-bold uppercase py-3">
                                     {getFormattedDate(day.dayNumber)}
                                 </SelectItem>
                             ))
@@ -162,9 +167,9 @@ export function CostsTab({ trip, onAddExpense, onDeleteExpense, getFormattedDate
 
             {/* LISTA DE GASTOS */}
             <div className="space-y-4">
-                <div className="flex items-center justify-between px-2">
-                    <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Lançamentos do Dia</h3>
-                    <Button onClick={() => onAddExpense(parseInt(selectedDay))} size="sm" className="bg-primary text-primary-foreground text-[10px] font-black uppercase h-8 rounded-lg">
+                <div className="flex items-center justify-between px-1">
+                    <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Lançamentos</h3>
+                    <Button onClick={() => onAddExpense(parseInt(selectedDay))} size="sm" className="bg-primary text-primary-foreground text-[10px] font-black uppercase h-8 px-4 rounded-xl shadow-lg shadow-primary/20">
                         <Plus size={14} className="mr-1" /> Add Gasto
                     </Button>
                 </div>
@@ -173,38 +178,44 @@ export function CostsTab({ trip, onAddExpense, onDeleteExpense, getFormattedDate
                     {filteredExpenses.length > 0 ? (
                         filteredExpenses.map((expense) => {
                             const cat = CATEGORY_MAP[expense.category] || CATEGORY_MAP.OTHER;
+                            const payer = trip.members.find(m => m.uid === expense.paidBy);
+
                             return (
-                                <div key={expense.id} className="group p-4 rounded-2xl border border-border/40 bg-card/30 hover:bg-card/40 transition-all">
+                                <div key={expense.id} className="group p-4 rounded-[24px] border border-border/40 bg-card/30 hover:bg-card/40 transition-all">
                                     <div className="flex items-center gap-4">
-                                        <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl", cat.bg, cat.color)}>
-                                            <cat.icon size={18} />
+                                        <div className={cn("flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl shadow-sm", cat.bg, cat.color)}>
+                                            <cat.icon size={20} />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-xs font-bold uppercase tracking-tight truncate">{expense.title}</p>
-                                            <div className="flex items-center gap-1 text-[9px] text-muted-foreground uppercase font-bold">
-                                                <span>Pago por {trip.members.find(m => m.uid === expense.paidBy)?.name.split(' ')[0]}</span>
-                                                <ArrowRight size={8} />
-                                                <span>{expense.participants?.length} pessoas</span>
+                                            <p className="text-[11px] font-black uppercase tracking-tight truncate text-foreground">{expense.title}</p>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <div className="flex items-center gap-1.5 bg-muted/20 px-2 py-0.5 rounded-md">
+                                                    {payer?.photoURL && (
+                                                        <img src={payer.photoURL} alt="" className="h-3.5 w-3.5 rounded-full object-cover border border-border/40" />
+                                                    )}
+                                                    <span className="text-[8px] font-bold uppercase text-muted-foreground">{payer?.name.split(' ')[0]}</span>
+                                                </div>
+                                                <ArrowRight size={8} className="text-muted-foreground/30" />
+                                                <span className="text-[8px] font-bold uppercase text-muted-foreground bg-muted/20 px-2 py-0.5 rounded-md">{expense.participants?.length} pessoas</span>
                                             </div>
                                         </div>
-                                        <div className="text-right">
-                                            <p className="text-sm font-black tracking-tight">{formatCurrency(expense.amount)}</p>
-                                            <button onClick={() => onDeleteExpense(expense.id)} className="text-[9px] text-destructive font-bold uppercase opacity-0 group-hover:opacity-100 transition-all">Excluir</button>
+                                        <div className="text-right shrink-0">
+                                            <p className="text-sm font-black tracking-tighter text-foreground">{formatCurrency(expense.amount)}</p>
+                                            <button onClick={() => onDeleteExpense(expense.id)} className="text-[9px] text-destructive/60 font-bold uppercase opacity-0 group-hover:opacity-100 transition-all hover:text-destructive">Excluir</button>
                                         </div>
                                     </div>
                                 </div>
                             );
                         })
                     ) : (
-                        <div className="py-12 text-center border border-dashed border-border/40 rounded-3xl opacity-50">
+                        <div className="py-16 text-center border-2 border-dashed border-border/20 rounded-[32px] bg-muted/5">
                             <Wallet size={24} className="mx-auto mb-2 text-muted-foreground/20" />
-                            <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Sem lançamentos para este dia</p>
+                            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/40">Sem gastos hoje</p>
                         </div>
                     )}
                 </div>
             </div>
 
-            {/* MODAL COMPONENTIZADO DE DÍVIDAS E CRÉDITOS */}
             <MemberDebtModal
                 viewingMember={viewingMember}
                 trip={trip}
