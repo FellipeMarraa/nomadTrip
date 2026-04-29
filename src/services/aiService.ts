@@ -54,23 +54,34 @@ export const generateTripContent = async (context: AIContext) => {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: "llama-3.1-70b-versatile", // MUDANÇA: Use o modelo 70B se disponível, ele é MUITO mais inteligente que o 8B para nomes reais
+                // ALTERAÇÃO: Modelo 3.3 é o substituto atualizado do 3.1 70b
+                model: "llama-3.3-70b-versatile",
                 messages: [
                     {
                         role: "system",
-                        content: `Você é um GPS humano de ${destination}. Você conhece as fronteiras exatas da cidade. Você odeia sugestões genéricas e locais fictícios. Você só recomenda o que está no TOP 10 da própria cidade.`
+                        content: `Você é um GPS humano de ${destination}. Responda APENAS com um objeto JSON válido. Você conhece as fronteiras exatas da cidade.`
                     },
                     { role: "user", content: prompt }
                 ],
-                temperature: 0.2, // REDUÇÃO: 0.2 para minimizar alucinações e criatividade. Queremos fatos, não ficção.
+                temperature: 0.1, // Reduzido ainda mais para evitar erros de localidade
+                max_tokens: 4000, // Garantir que o JSON não seja cortado no meio
                 response_format: { type: "json_object" }
             })
         });
 
-        if (!response.ok) throw new Error("Erro na resposta do Groq");
+        // Adicionado log para debug caso continue dando 400
+        if (!response.ok) {
+            const errorBody = await response.json();
+            console.error("Detalhes do erro Groq:", errorBody);
+            throw new Error(errorBody.error?.message || "Erro na resposta do Groq");
+        }
 
         const data = await response.json();
         const text = data.choices[0].message.content;
+
+        // Proteção contra respostas vazias
+        if (!text) throw new Error("A IA retornou um conteúdo vazio");
+
         const parsedData = JSON.parse(text);
 
         return {
@@ -80,6 +91,6 @@ export const generateTripContent = async (context: AIContext) => {
 
     } catch (error) {
         console.error("Falha crítica no Groq:", error);
-        return { checklist: [], itinerary: [] };
+        return null;
     }
 };

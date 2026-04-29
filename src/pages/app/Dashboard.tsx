@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from "react";
-import { PlaneTakeoff, Timer } from "lucide-react";
+import { PlaneTakeoff, Timer, ShieldAlert } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useTripStore } from "@/store/useTripStore";
 import { DashboardStats } from "@/components/features/DashboardStats";
@@ -8,7 +8,7 @@ import { CreateTripModal } from "@/components/features/CreateTripModal.tsx";
 import { differenceInDays, parseISO, startOfDay } from "date-fns";
 
 export function Dashboard() {
-    const { user } = useAuthStore();
+    const { user, isAdmin } = useAuthStore();
     const { trips, subscribeToTrips } = useTripStore();
 
     useEffect(() => {
@@ -24,7 +24,6 @@ export function Dashboard() {
 
         const now = startOfDay(new Date());
 
-        // Filtra viagens que ainda não começaram e ordena pela data mais próxima
         const upcomingTrips = trips
             .filter(trip => parseISO(trip.startDate) >= now)
             .sort((a, b) => parseISO(a.startDate).getTime() - parseISO(b.startDate).getTime());
@@ -40,6 +39,9 @@ export function Dashboard() {
         };
     }, [trips]);
 
+    // Verificação de permissão
+    const isGlobalAdmin = isAdmin();
+
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             {/* HEADER */}
@@ -52,16 +54,25 @@ export function Dashboard() {
                     {/* TEMPORIZADOR ESTILIZADO */}
                     {nextTripCountdown && (
                         <div className="flex items-center gap-2 text-primary animate-pulse-subtle">
+                            <Timer size={14} strokeWidth={2.5} />
                             <span className="text-[10px] font-black uppercase tracking-[0.15em]">
                                 {nextTripCountdown.days === 0
-                                    ? <> <Timer size={14} strokeWidth={2.5} /> "É hoje o embarque!" </>
-                                    : ``}
+                                    ? "É hoje o embarque!"
+                                    : `Faltam ${nextTripCountdown.days} dias para ${nextTripCountdown.destination}`}
                             </span>
                         </div>
                     )}
                 </div>
 
-                <CreateTripModal />
+                {/* SÓ MOSTRA O BOTÃO DE CRIAR SE FOR ADMIN_GLOBAL */}
+                {isGlobalAdmin ? (
+                    <CreateTripModal />
+                ) : (
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-muted/20 border border-border/40 opacity-60">
+                        <ShieldAlert size={14} className="text-muted-foreground" />
+                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Modo Visualização</span>
+                    </div>
+                )}
             </section>
 
             <DashboardStats trips={trips} />
@@ -69,7 +80,7 @@ export function Dashboard() {
             <section className="space-y-4">
                 <div className="flex items-center justify-between px-1">
                     <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
-                        Viagens Ativas
+                        {isGlobalAdmin ? "Minhas Viagens" : "Viagens que participo"}
                     </h2>
                     <div className="h-px flex-1 bg-border/40 mx-4" />
                     <span className="text-[10px] font-bold text-muted-foreground/60">
@@ -88,7 +99,9 @@ export function Dashboard() {
                         <PlaneTakeoff size={24} className="text-muted-foreground/40 mb-3" />
                         <h3 className="text-sm font-bold text-foreground">Nenhum roteiro por aqui</h3>
                         <p className="mt-1 text-[11px] text-muted-foreground uppercase font-medium tracking-tight">
-                            Planeje seu próximo destino agora.
+                            {isGlobalAdmin
+                                ? "Crie seu primeiro roteiro agora."
+                                : "Aguarde o convite de um administrador."}
                         </p>
                     </div>
                 )}

@@ -88,7 +88,8 @@ export interface Activity {
     title: string;
     description?: string;
     location?: string;
-    type: 'FOOD' | 'CULTURE' | 'TRANSPORT' | 'LEISURE';
+    type?: string;
+    iconId?: string;
 }
 
 export interface DayPlan {
