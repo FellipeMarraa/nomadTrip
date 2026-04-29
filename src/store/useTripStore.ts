@@ -21,7 +21,6 @@ interface TripState {
     setActiveTrip: (trip: Trip | null) => void;
     addMember: (tripId: string, member: TripMember) => Promise<void>;
     createTrip: (tripData: any) => Promise<string>;
-    // Atualizado para receber o contexto completo
     generateTripAIContent: (tripId: string, context: AIContext) => Promise<void>;
 }
 
@@ -32,6 +31,7 @@ export const useTripStore = create<TripState>((set) => ({
     setActiveTrip: (trip) => set({ activeTrip: trip }),
 
     subscribeToTrips: (userId) => {
+        // Esta query é o que garante que o usuário só "baixe" as viagens onde ele é membro
         const q = query(
             collection(db, 'trips'),
             where('members_ids', 'array-contains', userId)
@@ -48,6 +48,7 @@ export const useTripStore = create<TripState>((set) => ({
 
     addMember: async (tripId, member) => {
         const tripRef = doc(db, 'trips', tripId);
+        // Ao adicionar um membro, atualizamos o objeto para a UI e o ID para a Security Rule
         await updateDoc(tripRef, {
             members: arrayUnion(member),
             members_ids: arrayUnion(member.uid)
@@ -56,10 +57,11 @@ export const useTripStore = create<TripState>((set) => ({
 
     createTrip: async (tripData) => {
         try {
+            // Garantimos que o criador sempre comece dentro do members_ids
             const docRef = await addDoc(collection(db, 'trips'), {
                 ...tripData,
                 createdAt: serverTimestamp(),
-                members_ids: [tripData.ownerId],
+                members_ids: [tripData.ownerId], // Segurança: Dono é o primeiro ID
                 globalChecklist: tripData.globalChecklist || [],
                 itinerary: [],
                 expenses: [],
@@ -73,51 +75,48 @@ export const useTripStore = create<TripState>((set) => ({
     },
 
     generateTripAIContent: async (tripId, context) => {
+        const tripRef = doc(db, 'trips', tripId);
         try {
-            const tripRef = doc(db, 'trips', tripId);
-
-            // Atualiza status para sinalizar que a IA começou
             await updateDoc(tripRef, { status: 'GENERATING' });
 
-            console.log("IA Iniciada com contexto logístico:", context);
-
-            // Chama o serviço enviando o objeto de contexto completo
             const aiData = await generateTripContent(context);
 
             if (!aiData) throw new Error("IA não retornou dados.");
 
-            // Sanitização final antes do Firebase
+            // Mapeamento para o formato ChecklistItem (userId: null para itens globais)
             const checklist = (aiData.checklist || []).map((item: any) => ({
                 id: crypto.randomUUID().substring(0, 8),
-                task: item.task || "Tarefa sugerida",
+                task: item.task.toUpperCase(),
                 category: item.category || "Geral",
-                completed: false
+                completed: false,
+                userId: null // Itens gerados pela IA são globais por padrão
             }));
 
             const itinerary = (aiData.itinerary || []).map((day: any) => ({
                 dayNumber: day.dayNumber,
                 city: day.city || context.destination.split(',')[0].trim(),
                 activities: (day.activities || []).map((act: any) => ({
+                    id: crypto.randomUUID().substring(0, 8), // Adicionado ID para facilitar edição
                     time: act.time || "09:00",
-                    title: act.title || "Atividade",
-                    type: act.type || "LEISURE"
+                    title: act.title.toUpperCase(),
+                    type: "LEISURE",
+                    iconId: "MapPin" // Ícone padrão para atividades da IA
                 }))
             }));
 
             await updateDoc(tripRef, {
                 globalChecklist: checklist,
                 itinerary: itinerary,
-                status: 'COMPLETED' // IA finalizou com sucesso
+                status: 'COMPLETED'
             });
 
-            console.log("IA finalizou e salvou os dados!");
         } catch (err) {
             console.error("Erro crítico na geração da IA:", err);
-            const tripRef = doc(db, 'trips', tripId);
+            // Em caso de erro, voltamos para 'MANUAL' para não travar a tela do usuário no loading
             await updateDoc(tripRef, {
-                itinerary: [],
-                status: 'MANUAL' // Em caso de erro, libera para o usuário fazer manual
+                status: 'MANUAL'
             });
+            throw err;
         }
     }
 }));

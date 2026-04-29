@@ -70,7 +70,7 @@ export interface ChecklistItem {
     task: string;
     completed: boolean;
     category: string;
-    userId: string;
+    userId: string | null;
     updatedBy?: string;
 }
 

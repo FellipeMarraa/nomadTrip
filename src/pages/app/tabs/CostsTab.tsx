@@ -71,16 +71,8 @@ export function CostsTab({ trip, onAddExpense, onDeleteExpense, getFormattedDate
 
     const handleSettleDebt = async (from: string, to: string, amount: number) => {
         if (!trip.id) return;
-        const settlement = {
-            from,
-            to,
-            amount,
-            date: new Date().toISOString()
-        };
-
-        await updateDoc(doc(db, "trips", trip.id), {
-            settlements: arrayUnion(settlement)
-        });
+        const settlement = { from, to, amount, date: new Date().toISOString() };
+        await updateDoc(doc(db, "trips", trip.id), { settlements: arrayUnion(settlement) });
     };
 
     const filteredExpenses = expenses.filter(e => e.dayNumber === parseInt(selectedDay));
@@ -102,10 +94,9 @@ export function CostsTab({ trip, onAddExpense, onDeleteExpense, getFormattedDate
                             <button
                                 key={member.uid}
                                 onClick={() => setViewingMember(member)}
-                                className="flex flex-col gap-3 p-3.5 rounded-[24px] border border-border/40 bg-card/40 text-left transition-all hover:border-primary/40 active:scale-[0.97] group"
+                                className="flex flex-col min-h-[110px] p-4 rounded-[24px] border border-border/40 bg-card/40 text-left transition-all hover:border-primary/40 active:scale-[0.97] group shadow-sm"
                             >
-                                <div className="flex items-center gap-2.5 w-full">
-                                    {/* FOTO OU INICIAL */}
+                                <div className="flex items-start gap-2.5 w-full">
                                     <div className="h-9 w-9 shrink-0 rounded-xl bg-primary/10 flex items-center justify-center overflow-hidden border border-border/40 shadow-sm">
                                         {member.photoURL ? (
                                             <img src={member.photoURL} alt="" className="h-full w-full object-cover" />
@@ -117,11 +108,12 @@ export function CostsTab({ trip, onAddExpense, onDeleteExpense, getFormattedDate
                                     </div>
 
                                     <div className="flex flex-col min-w-0 flex-1">
-                                        <span className="text-[10px] font-black truncate uppercase tracking-tight text-foreground/90">
-                                            {member.name.split(' ')[0]}
+                                        {/* AJUSTE: Nome quebrando linha e sobrenome abaixo */}
+                                        <span className="text-[10px] font-black uppercase tracking-tight text-foreground/90 leading-[1.1] break-words">
+                                            {member.name}
                                         </span>
                                         <span className={cn(
-                                            "text-[7px] font-black uppercase px-1.5 py-0.5 rounded-md w-fit mt-0.5",
+                                            "text-[7px] font-black uppercase px-1.5 py-0.5 rounded-md w-fit mt-1.5",
                                             isCredit ? "bg-emerald-500/10 text-emerald-500" : isDebt ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground/60"
                                         )}>
                                             {isCredit ? "Crédito" : isDebt ? "Dívida" : "Quitado"}
@@ -179,7 +171,6 @@ export function CostsTab({ trip, onAddExpense, onDeleteExpense, getFormattedDate
                         filteredExpenses.map((expense) => {
                             const cat = CATEGORY_MAP[expense.category] || CATEGORY_MAP.OTHER;
                             const payer = trip.members.find(m => m.uid === expense.paidBy);
-
                             return (
                                 <div key={expense.id} className="group p-4 rounded-[24px] border border-border/40 bg-card/30 hover:bg-card/40 transition-all">
                                     <div className="flex items-center gap-4">
@@ -193,7 +184,7 @@ export function CostsTab({ trip, onAddExpense, onDeleteExpense, getFormattedDate
                                                     {payer?.photoURL && (
                                                         <img src={payer.photoURL} alt="" className="h-3.5 w-3.5 rounded-full object-cover border border-border/40" />
                                                     )}
-                                                    <span className="text-[8px] font-bold uppercase text-muted-foreground">{payer?.name.split(' ')[0]}</span>
+                                                    <span className="text-[8px] font-bold uppercase text-muted-foreground truncate max-w-[60px]">{payer?.name}</span>
                                                 </div>
                                                 <ArrowRight size={8} className="text-muted-foreground/30" />
                                                 <span className="text-[8px] font-bold uppercase text-muted-foreground bg-muted/20 px-2 py-0.5 rounded-md">{expense.participants?.length} pessoas</span>

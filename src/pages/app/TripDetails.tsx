@@ -2,7 +2,7 @@ import {useEffect, useState} from "react";
 import {useNavigate, useParams} from "react-router-dom";
 import {arrayUnion, deleteDoc, doc, onSnapshot, updateDoc} from "firebase/firestore";
 import {db} from "@/config/firebase";
-import type {Activity, DayPlan, Expense, Trip, TripMember} from "@/types";
+import type {Activity, ChecklistItem, DayPlan, Expense, Trip, TripMember} from "@/types";
 import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs";
 import {ManageDayModal} from "@/components/features/ManageDayModal";
 import {ManageActivityModal} from "@/components/features/ManageActivityModal";
@@ -31,12 +31,12 @@ import {CostsTab} from "@/pages/app/tabs/CostsTab.tsx";
 import {MembersTab} from "./tabs/MembersTab";
 import {ManageExpenseModal} from "@/components/features/ManageExpenseModal.tsx";
 import {useAuthStore} from "@/store/useAuthStore.ts";
-import {useTripStore} from "@/store/useTripStore"; // Importar a store de viagens
+import {useTripStore} from "@/store/useTripStore";
 
 export function TripDetails() {
     const { id } = useParams();
+    const { user, loading: authLoading } = useAuthStore();
     const navigate = useNavigate();
-    const { user } = useAuthStore();
     const [trip, setTrip] = useState<Trip | null>(null);
     const [loading, setLoading] = useState(true);
     const [copied, setCopied] = useState(false);
@@ -49,6 +49,30 @@ export function TripDetails() {
     const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
 
     const isOwner = trip?.ownerId === user?.uid;
+
+    useEffect(() => {
+        if (!id || authLoading) return;
+
+        const unsubscribe = onSnapshot(
+            doc(db, "trips", id),
+            (docSnap) => {
+                if (docSnap.exists()) {
+                    setTrip({ ...docSnap.data(), id: docSnap.id } as Trip);
+                } else {
+                    toast.error("Viagem não encontrada.");
+                    navigate("/dashboard");
+                }
+                setLoading(false);
+            },
+            () => {
+                toast.error("Acesso negado.");
+                navigate("/dashboard");
+                setLoading(false);
+            }
+        );
+
+        return () => unsubscribe();
+    }, [id, navigate, authLoading]);
 
     useEffect(() => {
         if (!id) { setLoading(false); return; }
@@ -201,11 +225,25 @@ export function TripDetails() {
         await updateDoc(doc(db, "trips", id), { itinerary: newItin });
     };
 
-    const handleAddChecklistItem = async (task: string, category: string) => {
-        if (!id || !user) return;
-        await updateDoc(doc(db, "trips", id), {
-            globalChecklist: arrayUnion({ id: crypto.randomUUID(), task, category, completed: false, userId: user.uid })
-        });
+    const handleAddChecklistItem = async (task: string, category: string, isGlobal?: boolean) => {
+        if (!id || !user?.uid) return;
+
+        const newItem: ChecklistItem = {
+            id: crypto.randomUUID(),
+            task: task.toUpperCase(),
+            category,
+            completed: false,
+            userId: isGlobal ? null : user.uid
+        };
+
+        try {
+            await updateDoc(doc(db, "trips", id), {
+                globalChecklist: arrayUnion(newItem)
+            });
+        } catch (error) {
+            console.error("Erro ao adicionar item:", error);
+            toast.error("Erro ao salvar item no checklist.");
+        }
     };
 
     const handleDeleteChecklistItem = async (kid: string) => {
@@ -214,7 +252,18 @@ export function TripDetails() {
     };
 
     if (loading) return <div className="flex h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-primary/50" size={32} /></div>;
+    if (authLoading || (loading && !trip)) {
+        return (
+            <div className="flex h-[60vh] items-center justify-center">
+                <Loader2 className="animate-spin text-primary/50" size={32} />
+            </div>
+        );
+    }
+
     if (!trip) return null;
+
+    const isMember = trip.members.some(member => member.uid === user?.uid);
+    if (!isMember) return null;
 
     const isGenerating = trip.status === 'START' || trip.status === 'GENERATING';
     const isManualEmpty = trip.status === 'MANUAL' && trip.itinerary.length === 0;
@@ -309,10 +358,18 @@ export function TripDetails() {
                 </TabsContent>
 
                 <TabsContent value="checklist" className="outline-none">
-                    <ChecklistTab checklist={trip.globalChecklist} onToggleItem={async (itemId, current) => {
-                        const updated = trip.globalChecklist.map(i => i.id === itemId ? { ...i, completed: !current } : i);
-                        await updateDoc(doc(db, "trips", id!), { globalChecklist: updated });
-                    }} onAddItem={handleAddChecklistItem} onDeleteItem={handleDeleteChecklistItem} />
+                    <ChecklistTab
+                        checklist={trip.globalChecklist}
+                        onToggleItem={async (itemId, current) => {
+                            const updated = trip.globalChecklist.map(i =>
+                                i.id === itemId ? { ...i, completed: !current } : i
+                            );
+                            await updateDoc(doc(db, "trips", id!), { globalChecklist: updated });
+                        }}
+                        onAddItem={handleAddChecklistItem}
+                        onDeleteItem={handleDeleteChecklistItem}
+                        isOwner={isOwner}
+                    />
                 </TabsContent>
 
                 <TabsContent value="costs" className="outline-none">
