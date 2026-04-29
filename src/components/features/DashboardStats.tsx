@@ -2,7 +2,7 @@ import { CheckCircle2, Clock, CalendarRange } from "lucide-react";
 import type { Trip } from "@/types";
 import { useMemo } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
-import { differenceInDays, parseISO } from "date-fns";
+import {differenceInDays, parseISO, startOfDay} from "date-fns";
 
 interface DashboardStatsProps {
     trips: Trip[];
@@ -10,18 +10,19 @@ interface DashboardStatsProps {
 
 export function DashboardStats({ trips }: DashboardStatsProps) {
     const { user } = useAuthStore();
+    const today = startOfDay(new Date());
 
     const stats = useMemo(() => {
         // 1. FILTRAR VIAGENS FUTURAS E PEGAR A MAIS PRÓXIMA
         const upcomingTrips = trips
-            .filter(t => parseISO(t.startDate) >= new Date())
+            .filter(t => parseISO(t.startDate) >= today) // Use today aqui
             .sort((a, b) => parseISO(a.startDate).getTime() - parseISO(b.startDate).getTime());
 
         const nextTrip = upcomingTrips[0];
 
         // CÁLCULO: DIAS PARA O EMBARQUE
         const nextTripDays = nextTrip
-            ? differenceInDays(parseISO(nextTrip.startDate), new Date())
+            ? differenceInDays(parseISO(nextTrip.startDate), today) // Use today aqui
             : null;
 
         // CÁLCULO: DURAÇÃO DA PRÓXIMA VIAGEM
