@@ -67,7 +67,7 @@ export function Dashboard() {
                             <span className="text-[10px] font-medium uppercase tracking-[0.15em]">
                                 {nextTripCountdown.days === 0
                                     ? "É hoje o seu embarque!"
-                                    : `Faltam ${nextTripCountdown.days} dias para ${nextTripCountdown.destination}`}
+                                    : `Falta pouco para sua viagem`}
                             </span>
                         </div>
                     )}
