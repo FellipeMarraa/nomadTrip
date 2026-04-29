@@ -6,6 +6,7 @@ import {AuthGuard} from "@/components/auth/AuthGuard.tsx";
 import {AppShell} from "@/components/layout/AppShell.tsx";
 import {Dashboard} from "@/pages/app/Dashboard.tsx";
 import {TripDetails} from "@/pages/app/TripDetails.tsx";
+import {JoinTripPage} from "@/pages/app/JoinTripPage.tsx";
 
 const WalletPage = () => <div>Milhas e Finanças</div>;
 const AdminPanel = () => <div>Painel do Administrador Global</div>;
@@ -32,6 +33,11 @@ export default function App() {
                             </AppShell>
                         </AuthGuard>
                     }
+                />
+
+                <Route
+                    path="/join/:id"
+                    element={<JoinTripPage />}
                 />
 
                 <Route

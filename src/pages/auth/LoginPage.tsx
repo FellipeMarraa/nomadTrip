@@ -15,11 +15,17 @@ export function LoginPage() {
     }, []);
 
     useEffect(() => {
-        if (user) {
-            const from = (location.state as any)?.from?.pathname || "/";
-            navigate(from, { replace: true });
+        if (user && !loading) {
+            // Tenta pegar o objeto location inteiro enviado pelo AuthGuard
+            const destination = location.state?.from || "/";
+
+            console.log("Redirecionando para:", destination);
+
+            // Se o 'destination' for um objeto (enviado pelo AuthGuard), o navigate entende.
+            // Se for nulo, ele usa "/"
+            navigate(destination, { replace: true });
         }
-    }, [user, navigate, location]);
+    }, [user, loading, navigate, location]);
 
     return (
         /* Trocamos bg-white por bg-background */
