@@ -46,12 +46,12 @@ export const useTripStore = create<TripState>((set) => ({
         });
     },
 
-    addMember: async (tripId, member) => {
-        const tripRef = doc(db, 'trips', tripId);
-        // Ao adicionar um membro, atualizamos o objeto para a UI e o ID para a Security Rule
+    async addMember(tripId: string, member: TripMember) {
+        const tripRef = doc(db, "trips", tripId);
+
         await updateDoc(tripRef, {
-            members: arrayUnion(member),
-            members_ids: arrayUnion(member.uid)
+            members_ids: arrayUnion(member.uid),
+            members: arrayUnion(member)
         });
     },
 

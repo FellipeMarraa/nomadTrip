@@ -1,53 +1,75 @@
-import {CheckCircle2, Globe, Map} from "lucide-react";
-import type {Trip} from "@/types";
-import {useMemo} from "react";
+import { CheckCircle2, Clock, CalendarRange } from "lucide-react";
+import type { Trip } from "@/types";
+import { useMemo } from "react";
+import { useAuthStore } from "@/store/useAuthStore";
+import { differenceInDays, parseISO } from "date-fns";
 
 interface DashboardStatsProps {
     trips: Trip[];
 }
 
 export function DashboardStats({ trips }: DashboardStatsProps) {
-    // Usamos useMemo para não refazer cálculos a cada renderização, apenas quando trips mudar
-    const stats = useMemo(() => {
-        const totalTrips = trips.length;
+    const { user } = useAuthStore();
 
-        // Calcula o total de tarefas pendentes em todas as viagens
+    const stats = useMemo(() => {
+        // 1. FILTRAR VIAGENS FUTURAS E PEGAR A MAIS PRÓXIMA
+        const upcomingTrips = trips
+            .filter(t => parseISO(t.startDate) >= new Date())
+            .sort((a, b) => parseISO(a.startDate).getTime() - parseISO(b.startDate).getTime());
+
+        const nextTrip = upcomingTrips[0];
+
+        // CÁLCULO: DIAS PARA O EMBARQUE
+        const nextTripDays = nextTrip
+            ? differenceInDays(parseISO(nextTrip.startDate), new Date())
+            : null;
+
+        // CÁLCULO: DURAÇÃO DA PRÓXIMA VIAGEM
+        const nextTripDuration = nextTrip
+            ? differenceInDays(parseISO(nextTrip.endDate), parseISO(nextTrip.startDate)) + 1
+            : null;
+
+        // 2. TAREFAS PENDENTES (Global + Pessoal)
         const pendingTasks = trips.reduce((acc, trip) => {
-            const tasks = trip.globalChecklist?.filter(item => !item.completed).length || 0;
-            return acc + tasks;
+            const myPending = trip.globalChecklist?.filter(item => {
+                const isRelevant = !item.userId || item.userId === user?.uid;
+                return isRelevant && !item.completed;
+            }).length || 0;
+            return acc + myPending;
         }, 0);
 
-        // Extrai destinos únicos para contar locais
-        const uniqueDestinations = new Set(trips.map(t => t.destination.split(',')[0].trim())).size;
-
         return {
-            totalTrips,
-            pendingTasks,
-            uniqueDestinations
+            nextTripDays,
+            nextTripDuration,
+            pendingTasks
         };
-    }, [trips]);
+    }, [trips, user?.uid]);
 
     const items = [
         {
-            label: "Total de Viagens",
-            value: stats.totalTrips,
-            icon: Map,
+            label: "Próximo Embarque",
+            value: stats.nextTripDays !== null
+                ? (stats.nextTripDays === 0 ? "É hoje" : `Em ${stats.nextTripDays} dias`)
+                : "Sem planos",
+            icon: Clock,
             color: "text-blue-500",
-            bg: "bg-blue-500/10"
+            bg: "bg-blue-500/5"
         },
         {
-            label: "Locais Explorados",
-            value: stats.uniqueDestinations,
-            icon: Globe,
+            label: "Duração da Viagem",
+            value: stats.nextTripDuration !== null
+                ? `${stats.nextTripDuration} dias`
+                : "0 dias",
+            icon: CalendarRange,
             color: "text-emerald-500",
-            bg: "bg-emerald-500/10"
+            bg: "bg-emerald-500/5"
         },
         {
             label: "Tarefas Pendentes",
-            value: stats.pendingTasks,
+            value: `${stats.pendingTasks} itens`,
             icon: CheckCircle2,
             color: "text-amber-500",
-            bg: "bg-amber-500/10"
+            bg: "bg-amber-500/5"
         }
     ];
 
@@ -56,16 +78,16 @@ export function DashboardStats({ trips }: DashboardStatsProps) {
             {items.map((stat, i) => (
                 <div
                     key={i}
-                    className="flex items-center gap-4 rounded-2xl border border-border/40 bg-card/30 p-4 transition-all hover:bg-card/50"
+                    className="flex items-center gap-4 rounded-3xl border border-border/40 bg-card/20 p-5 transition-all hover:bg-card/40"
                 >
-                    <div className={`rounded-xl ${stat.bg} p-2.5 ${stat.color}`}>
-                        <stat.icon size={20} />
+                    <div className={`rounded-2xl ${stat.bg} p-3 ${stat.color}`}>
+                        <stat.icon size={20} strokeWidth={1.5} />
                     </div>
-                    <div>
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    <div className="flex flex-col">
+                        <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground leading-none mb-1.5">
                             {stat.label}
                         </p>
-                        <h3 className="text-xl font-bold tracking-tight">
+                        <h3 className="text-base font-normal tracking-tight text-foreground leading-none">
                             {stat.value}
                         </h3>
                     </div>

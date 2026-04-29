@@ -59,7 +59,7 @@ export function CreateTripModal() {
             };
 
             const tripId = await createTrip({
-                ownerId: user.uid,
+                ownerIds: [user.uid],
                 destination,
                 startDate: format(date.from, "yyyy-MM-dd"),
                 endDate: format(date.to, "yyyy-MM-dd"),

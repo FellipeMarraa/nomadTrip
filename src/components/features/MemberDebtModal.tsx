@@ -41,7 +41,6 @@ export function MemberDebtModal({ viewingMember, trip, onClose, onSettle }: Memb
         } catch { return `Dia ${dayNumber}`; }
     };
 
-    // LÓGICA 1: O que o membro selecionado DEVE (Com Participantes)
     const debts = useMemo(() => {
         if (!viewingMember) return [];
         const creditors: Record<string, { member: TripMember, total: number, items: any[] }> = {};
@@ -79,7 +78,6 @@ export function MemberDebtModal({ viewingMember, trip, onClose, onSettle }: Memb
         }).filter(g => g.netTotal > 0.01);
     }, [viewingMember, expenses, trip.members, settlements]);
 
-    // LÓGICA 2: O que o membro selecionado tem a RECEBER
     const credits = useMemo(() => {
         if (!viewingMember) return [];
         const debtors: Record<string, { member: TripMember, total: number }> = {};
@@ -109,7 +107,6 @@ export function MemberDebtModal({ viewingMember, trip, onClose, onSettle }: Memb
         }).filter(g => g.netTotal > 0.01);
     }, [viewingMember, expenses, trip.members, settlements]);
 
-    // LÓGICA 3: Histórico Geral do Membro
     const memberHistory = useMemo(() => {
         if (!viewingMember) return [];
         return settlements
@@ -121,76 +118,58 @@ export function MemberDebtModal({ viewingMember, trip, onClose, onSettle }: Memb
 
     return (
         <Dialog open={!!viewingMember} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="w-[94vw] max-w-[500px] rounded-[32px] bg-card border-border/40 p-0 overflow-hidden shadow-2xl">
-                {/* Header fixo */}
-                <div className="p-6 bg-primary/5 border-b border-border/40">
+            <DialogContent className="w-[94vw] max-w-[500px] rounded-[32px] bg-background border-border/40 p-0 overflow-hidden shadow-2xl">
+                <div className="p-6 bg-muted/5 border-b border-border/40">
                     <DialogHeader className="flex flex-row items-center gap-4 space-y-0">
-                        <div className="h-12 w-12 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center text-xl font-black uppercase">
+                        <div className="h-11 w-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-sm font-medium uppercase border border-primary/10">
                             {viewingMember.name.substring(0, 2)}
                         </div>
-                        <div>
-                            <DialogTitle className="text-sm font-black uppercase tracking-widest">{viewingMember.name}</DialogTitle>
-                            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter">Relatório de Acertos</p>
+                        <div className="flex flex-col">
+                            <DialogTitle className="text-sm font-medium uppercase tracking-widest">{viewingMember.name}</DialogTitle>
+                            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mt-1">Acertos de contas</p>
                         </div>
                     </DialogHeader>
                 </div>
 
                 <Tabs defaultValue="debts" className="w-full">
-                    <TabsList className="grid w-full grid-cols-3 bg-transparent border-b border-border/20 h-12 p-0 rounded-none">
-                        <TabsTrigger value="debts" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none text-[9px] font-black uppercase">Deve</TabsTrigger>
-                        <TabsTrigger value="credits" className="data-[state=active]:border-b-2 data-[state=active]:border-emerald-500 rounded-none text-[9px] font-black uppercase">Receber</TabsTrigger>
-                        <TabsTrigger value="history" className="data-[state=active]:border-b-2 data-[state=active]:border-amber-500 rounded-none text-[9px] font-black uppercase">Histórico</TabsTrigger>
+                    <TabsList className="grid w-full grid-cols-3 bg-transparent border-b border-border/10 h-12 p-0 rounded-none">
+                        <TabsTrigger value="debts" className="data-[state=active]:bg-primary/5 data-[state=active]:text-primary rounded-none text-[9px] font-medium uppercase tracking-widest transition-all">Deve</TabsTrigger>
+                        <TabsTrigger value="credits" className="data-[state=active]:bg-emerald-500/5 data-[state=active]:text-emerald-500 rounded-none text-[9px] font-medium uppercase tracking-widest transition-all">Receber</TabsTrigger>
+                        <TabsTrigger value="history" className="data-[state=active]:bg-amber-500/5 data-[state=active]:text-amber-500 rounded-none text-[9px] font-medium uppercase tracking-widest transition-all">Histórico</TabsTrigger>
                     </TabsList>
 
                     <ScrollArea className="max-h-[60vh]">
                         <div className="p-6">
-                            {/* ABA DE DÍVIDAS COM DETALHAMENTO E BOLINHAS */}
                             <TabsContent value="debts" className="m-0 space-y-8">
                                 {debts.length > 0 ? debts.map((group, idx) => (
                                     <div key={idx} className="space-y-4">
-                                        <div className="flex items-center justify-between border-b border-border/20 pb-2">
-                                            <span className="text-[10px] font-black uppercase text-muted-foreground">Pagar para <span className="text-primary">{group.member.name.split(' ')[0]}</span></span>
-                                            <span className="text-sm font-black text-destructive">{formatCurrency(group.netTotal)}</span>
+                                        <div className="flex items-center justify-between border-b border-border/10 pb-3">
+                                            <span className="text-[10px] font-medium uppercase text-muted-foreground tracking-wider">Pagar para <span className="text-foreground">{group.member.name.split(' ')[0]}</span></span>
+                                            <span className="text-sm font-medium text-destructive/80">{formatCurrency(group.netTotal)}</span>
                                         </div>
                                         <div className="space-y-3">
                                             {group.items.map((item, iIdx) => (
-                                                <div key={iIdx} className="bg-muted/30 rounded-2xl p-4 border border-border/10 space-y-3">
+                                                <div key={iIdx} className="bg-muted/20 rounded-2xl p-4 border border-border/10 space-y-3">
                                                     <div className="flex justify-between items-start">
-                                                        <span className="text-[11px] font-bold uppercase truncate max-w-[180px]">{item.title}</span>
-                                                        <span className="text-[11px] font-black">{formatCurrency(item.share)}</span>
+                                                        <span className="text-[11px] font-medium uppercase tracking-tight truncate max-w-[180px]">{item.title}</span>
+                                                        <span className="text-[11px] font-medium text-foreground/80">{formatCurrency(item.share)}</span>
                                                     </div>
 
-                                                    <div className="flex flex-col gap-2 pt-2 border-t border-border/10">
-                                                        <div className="flex items-center gap-1.5 text-[8px] font-bold text-muted-foreground uppercase">
-                                                            <Divide size={10} /> {formatCurrency(item.fullAmount)} ÷ {item.participantsCount}p
+                                                    <div className="flex flex-col gap-2 pt-3 border-t border-border/5">
+                                                        <div className="flex items-center gap-1.5 text-[8px] font-medium text-muted-foreground/60 uppercase tracking-widest">
+                                                            <Divide size={10} strokeWidth={1.5} /> {formatCurrency(item.fullAmount)} ÷ {item.participantsCount}p
                                                         </div>
                                                         <div className="flex items-center justify-between">
                                                             <div className="flex items-center gap-2">
-                                                                <CalendarDays size={10} className="text-primary" />
-                                                                <span className="text-[8px] font-bold text-muted-foreground uppercase">{item.dateLabel}</span>
+                                                                <CalendarDays size={10} strokeWidth={1.5} className="text-primary/50" />
+                                                                <span className="text-[8px] font-medium text-muted-foreground/60 uppercase">{item.dateLabel}</span>
                                                             </div>
-                                                            {/* BOLINHAS DE PARTICIPANTES */}
                                                             <div className="flex -space-x-1.5">
                                                                 {item.participantsUids.map((pUid: string) => {
                                                                     const participant = trip.members.find(m => m.uid === pUid);
                                                                     return (
-                                                                        <div
-                                                                            key={pUid}
-                                                                            className={cn(
-                                                                                "h-5 w-5 rounded-full border-2 border-card overflow-hidden flex items-center justify-center text-[6px] font-bold text-white uppercase shadow-sm",
-                                                                                pUid === viewingMember.uid ? "bg-primary" : "bg-muted-foreground"
-                                                                            )}
-                                                                            title={participant?.name}
-                                                                        >
-                                                                            {participant?.photoURL ? (
-                                                                                <img
-                                                                                    src={participant.photoURL}
-                                                                                    alt={participant.name}
-                                                                                    className="h-full w-full object-cover"
-                                                                                />
-                                                                            ) : (
-                                                                                <span>{participant?.name.substring(0, 1)}</span>
-                                                                            )}
+                                                                        <div key={pUid} className={cn("h-5 w-5 rounded-full border-2 border-background overflow-hidden flex items-center justify-center text-[6px] font-medium text-white shadow-sm", pUid === viewingMember.uid ? "bg-primary/80" : "bg-muted-foreground/40")}>
+                                                                            {participant?.photoURL ? <img src={participant.photoURL} alt="" className="h-full w-full object-cover" /> : <span>{participant?.name.substring(0, 1)}</span>}
                                                                         </div>
                                                                     );
                                                                 })}
@@ -201,57 +180,69 @@ export function MemberDebtModal({ viewingMember, trip, onClose, onSettle }: Memb
                                             ))}
                                         </div>
                                     </div>
-                                )) : <div className="py-12 text-center opacity-40"><CheckCircle2 className="mx-auto mb-2" /><p className="text-[10px] font-black uppercase">Sem dívidas</p></div>}
+                                )) : <EmptyState icon={CheckCircle2} label="Sem dívidas pendentes" />}
                             </TabsContent>
 
-                            {/* ABA DE CRÉDITOS */}
                             <TabsContent value="credits" className="m-0 space-y-4">
                                 {credits.length > 0 ? credits.map((group, idx) => (
-                                    <div key={idx} className="flex items-center justify-between p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/20">
-                                        <div className="flex flex-col"><span className="text-[9px] font-black uppercase text-muted-foreground">Receber de</span><span className="text-xs font-black uppercase">{group.member.name}</span></div>
+                                    <div key={idx} className="flex items-center justify-between p-4 rounded-2xl bg-emerald-500/[0.03] border border-emerald-500/10">
+                                        <div className="flex flex-col">
+                                            <span className="text-[9px] font-medium uppercase text-muted-foreground/60 tracking-wider">Receber de</span>
+                                            <span className="text-xs font-medium uppercase text-foreground">{group.member.name}</span>
+                                        </div>
                                         <div className="flex items-center gap-3">
-                                            <span className="text-sm font-black text-emerald-500">{formatCurrency(group.netTotal)}</span>
-                                            <Button size="sm" className="bg-emerald-500 hover:bg-emerald-600 h-8 rounded-lg text-[9px] font-black uppercase" onClick={() => onSettle(group.member.uid, viewingMember.uid, group.netTotal)}><HandCoins size={14} className="mr-1" /> Recebi</Button>
+                                            <span className="text-sm font-medium text-emerald-500/80">{formatCurrency(group.netTotal)}</span>
+                                            <Button size="sm" className="bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 h-8 rounded-xl text-[9px] font-medium uppercase tracking-widest border-none shadow-none" onClick={() => onSettle(group.member.uid, viewingMember.uid, group.netTotal)}>
+                                                <HandCoins size={14} strokeWidth={1.5} className="mr-1.5" /> Recebi
+                                            </Button>
                                         </div>
                                     </div>
-                                )) : <div className="py-12 text-center opacity-40"><Receipt className="mx-auto mb-2" /><p className="text-[10px] font-black uppercase">Nada a receber</p></div>}
+                                )) : <EmptyState icon={Receipt} label="Nada a receber no momento" />}
                             </TabsContent>
 
-                            {/* ABA DE HISTÓRICO */}
                             <TabsContent value="history" className="m-0 space-y-3">
                                 {memberHistory.length > 0 ? memberHistory.map((s, i) => {
                                     const isPayer = s.from === viewingMember.uid;
                                     return (
-                                        <div key={i} className="p-4 rounded-2xl bg-muted/20 border border-border/20 flex items-center justify-between">
+                                        <div key={i} className="p-4 rounded-2xl bg-muted/10 border border-border/10 flex items-center justify-between">
                                             <div className="flex items-center gap-3">
-                                                <div className={cn("p-2 rounded-lg", isPayer ? "bg-destructive/10 text-destructive" : "bg-emerald-500/10 text-emerald-500")}>
-                                                    {isPayer ? <ArrowUpRight size={14} /> : <ArrowDownLeft size={14} />}
+                                                <div className={cn("p-2 rounded-lg", isPayer ? "bg-destructive/5 text-destructive/60" : "bg-emerald-500/5 text-emerald-500/60")}>
+                                                    {isPayer ? <ArrowUpRight size={14} strokeWidth={1.5} /> : <ArrowDownLeft size={14} strokeWidth={1.5} />}
                                                 </div>
                                                 <div className="flex flex-col">
-                                                    <span className="text-[10px] font-black uppercase tracking-tight">
+                                                    <span className="text-[10px] font-medium uppercase tracking-tight text-foreground/80">
                                                         {isPayer ? `Pagou para ${trip.members.find(m => m.uid === s.to)?.name.split(' ')[0]}` : `Recebeu de ${trip.members.find(m => m.uid === s.from)?.name.split(' ')[0]}`}
                                                     </span>
-                                                    <span className="text-[8px] font-bold text-muted-foreground uppercase">{format(parseISO(s.date), "dd/MM 'às' HH:mm", { locale: ptBR })}</span>
+                                                    <span className="text-[8px] font-medium text-muted-foreground/40 uppercase mt-0.5">{format(parseISO(s.date), "dd MMM 'às' HH:mm", { locale: ptBR })}</span>
                                                 </div>
                                             </div>
-                                            <div className="flex flex-col items-end gap-1">
-                                                <span className={cn("text-[11px] font-black", isPayer ? "text-destructive" : "text-emerald-500")}>
+                                            <div className="flex items-center gap-3">
+                                                <span className={cn("text-[11px] font-medium", isPayer ? "text-destructive/70" : "text-emerald-500/70")}>
                                                     {isPayer ? "-" : "+"}{formatCurrency(s.amount)}
                                                 </span>
-                                                <div className="bg-emerald-500/20 text-emerald-500 p-0.5 rounded-full"><Check size={8} strokeWidth={4} /></div>
+                                                <div className="h-4 w-4 bg-emerald-500/10 text-emerald-500 flex items-center justify-center rounded-full"><Check size={10} strokeWidth={2.5} /></div>
                                             </div>
                                         </div>
                                     );
-                                }) : <div className="py-12 text-center opacity-40"><History className="mx-auto mb-2" /><p className="text-[10px] font-black uppercase">Sem histórico</p></div>}
+                                }) : <EmptyState icon={History} label="Nenhuma transação registrada" />}
                             </TabsContent>
                         </div>
                     </ScrollArea>
                 </Tabs>
 
-                <div className="p-6 border-t border-border/40 bg-muted/5 text-center">
-                    <Button onClick={onClose} variant="ghost" className="font-black uppercase text-[10px] tracking-widest opacity-60 hover:opacity-100">Fechar Relatório</Button>
+                <div className="p-6 bg-muted/5 text-center border-t border-border/5">
+                    <Button onClick={onClose} variant="ghost" className="font-medium uppercase text-[10px] tracking-[0.2em] text-muted-foreground/40 hover:text-foreground transition-all">Fechar</Button>
                 </div>
             </DialogContent>
         </Dialog>
+    );
+}
+
+function EmptyState({ icon: Icon, label }: { icon: any, label: string }) {
+    return (
+        <div className="py-16 text-center space-y-3">
+            <Icon size={24} strokeWidth={1} className="mx-auto text-muted-foreground/20" />
+            <p className="text-[9px] font-medium uppercase tracking-widest text-muted-foreground/40">{label}</p>
+        </div>
     );
 }

@@ -8,9 +8,10 @@ import {Dashboard} from "@/pages/app/Dashboard.tsx";
 import {TripDetails} from "@/pages/app/TripDetails.tsx";
 import {JoinTripPage} from "@/pages/app/JoinTripPage.tsx";
 
-const WalletPage = () => <div>Milhas e Finanças</div>;
-const AdminPanel = () => <div>Painel do Administrador Global</div>;
-const Settings = () => <div>Configurações do Perfil</div>;
+// Pages temporárias (mantenha-as ou mova para arquivos próprios conforme evoluir)
+const WalletPage = () => <div className="p-8 text-sm font-medium uppercase tracking-widest opacity-40">Milhas e Finanças</div>;
+const AdminPanel = () => <div className="p-8 text-sm font-medium uppercase tracking-widest opacity-40">Painel do Administrador Global</div>;
+const Settings = () => <div className="p-8 text-sm font-medium uppercase tracking-widest opacity-40">Configurações do Perfil</div>;
 
 export default function App() {
     const { initialize } = useAuthStore();
@@ -22,8 +23,17 @@ export default function App() {
     return (
         <BrowserRouter>
             <Routes>
+                {/* Rota Pública */}
                 <Route path="/login" element={<LoginPage />} />
 
+                {/* Rota de Convite:
+                  Mantemos fora do AuthGuard para que o JoinTripPage
+                  gerencie o redirecionamento manual preservando os
+                  parâmetros de busca (?role=admin).
+                */}
+                <Route path="/join/:id" element={<JoinTripPage />} />
+
+                {/* Rotas Protegidas */}
                 <Route
                     path="/"
                     element={
@@ -33,11 +43,6 @@ export default function App() {
                             </AppShell>
                         </AuthGuard>
                     }
-                />
-
-                <Route
-                    path="/join/:id"
-                    element={<JoinTripPage />}
                 />
 
                 <Route
@@ -73,6 +78,7 @@ export default function App() {
                     }
                 />
 
+                {/* Rota Administrativa Global (Sistema) */}
                 <Route
                     path="/admin"
                     element={

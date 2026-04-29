@@ -16,13 +16,8 @@ export function LoginPage() {
 
     useEffect(() => {
         if (user && !loading) {
-            // Tenta pegar o objeto location inteiro enviado pelo AuthGuard
             const destination = location.state?.from || "/";
 
-            console.log("Redirecionando para:", destination);
-
-            // Se o 'destination' for um objeto (enviado pelo AuthGuard), o navigate entende.
-            // Se for nulo, ele usa "/"
             navigate(destination, { replace: true });
         }
     }, [user, loading, navigate, location]);

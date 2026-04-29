@@ -18,6 +18,15 @@ export function Dashboard() {
         }
     }, [user?.uid, subscribeToTrips]);
 
+    // Ordenação: Viagens mais próximas primeiro
+    const sortedTrips = useMemo(() => {
+        return [...trips].sort((a, b) => {
+            const dateA = parseISO(a.startDate).getTime();
+            const dateB = parseISO(b.startDate).getTime();
+            return dateA - dateB;
+        });
+    }, [trips]);
+
     // Lógica para encontrar a próxima viagem e calcular os dias
     const nextTripCountdown = useMemo(() => {
         if (!trips.length) return null;
@@ -43,21 +52,21 @@ export function Dashboard() {
     const isGlobalAdmin = isAdmin();
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500">
+        <div className="space-y-8 animate-in fade-in duration-500 pb-10">
             {/* HEADER */}
             <section className="flex flex-row items-center justify-between border-b border-border/40 pb-6">
                 <div className="space-y-1">
-                    <h1 className="text-xl font-bold tracking-tight md:text-2xl">
+                    <h1 className="text-xl font-normal tracking-tight md:text-2xl text-foreground">
                         Olá, {user?.displayName?.split(" ")[0]}
                     </h1>
 
                     {/* TEMPORIZADOR ESTILIZADO */}
                     {nextTripCountdown && (
-                        <div className="flex items-center gap-2 text-primary animate-pulse-subtle">
-                            <Timer size={14} strokeWidth={2.5} />
-                            <span className="text-[10px] font-black uppercase tracking-[0.15em]">
+                        <div className="flex items-center gap-2 text-primary/80 animate-pulse-subtle">
+                            <Timer size={14} strokeWidth={1.5} />
+                            <span className="text-[10px] font-medium uppercase tracking-[0.15em]">
                                 {nextTripCountdown.days === 0
-                                    ? "É hoje o embarque!"
+                                    ? "É hoje o seu embarque!"
                                     : `Faltam ${nextTripCountdown.days} dias para ${nextTripCountdown.destination}`}
                             </span>
                         </div>
@@ -68,37 +77,38 @@ export function Dashboard() {
                 {isGlobalAdmin ? (
                     <CreateTripModal />
                 ) : (
-                    <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-muted/20 border border-border/40 opacity-60">
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-muted/10 border border-border/40 opacity-60">
                         <ShieldAlert size={14} className="text-muted-foreground" />
-                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Modo Visualização</span>
+                        <span className="text-[9px] font-medium uppercase tracking-widest text-muted-foreground">Modo Visualização</span>
                     </div>
                 )}
             </section>
 
             <DashboardStats trips={trips} />
 
-            <section className="space-y-4">
+            <section className="space-y-6">
                 <div className="flex items-center justify-between px-1">
-                    <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
+                    <h2 className="text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
                         {isGlobalAdmin ? "Minhas Viagens" : "Viagens que participo"}
                     </h2>
-                    <div className="h-px flex-1 bg-border/40 mx-4" />
-                    <span className="text-[10px] font-bold text-muted-foreground/60">
-                        {trips.length} totais
+                    <div className="h-px flex-1 bg-border/20 mx-4" />
+                    <span className="text-[10px] font-medium text-muted-foreground/40 uppercase tracking-widest">
+                        {trips.length} {trips.length === 1 ? 'total' : 'totais'}
                     </span>
                 </div>
 
-                {trips.length > 0 ? (
+                {sortedTrips.length > 0 ? (
+                    /* Grid Responsivo: O scroll é natural da página (melhor UX) */
                     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                        {trips.map((trip) => (
+                        {sortedTrips.map((trip) => (
                             <TripCard key={trip.id} trip={trip} />
                         ))}
                     </div>
                 ) : (
-                    <div className="flex flex-col items-center justify-center rounded-2xl border border-border/40 bg-card/10 py-16 text-center">
-                        <PlaneTakeoff size={24} className="text-muted-foreground/40 mb-3" />
-                        <h3 className="text-sm font-bold text-foreground">Nenhum roteiro por aqui</h3>
-                        <p className="mt-1 text-[11px] text-muted-foreground uppercase font-medium tracking-tight">
+                    <div className="flex flex-col items-center justify-center rounded-[32px] border border-border/40 bg-card/10 py-20 text-center">
+                        <PlaneTakeoff size={28} strokeWidth={1.2} className="text-muted-foreground/30 mb-4" />
+                        <h3 className="text-sm font-normal text-foreground">Nenhum roteiro por aqui</h3>
+                        <p className="mt-2 text-[10px] text-muted-foreground uppercase font-medium tracking-widest">
                             {isGlobalAdmin
                                 ? "Crie seu primeiro roteiro agora."
                                 : "Aguarde o convite de um administrador."}

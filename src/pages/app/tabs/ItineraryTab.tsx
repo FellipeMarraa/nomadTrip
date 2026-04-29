@@ -16,6 +16,7 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import type {Activity, DayPlan, Trip} from "@/types";
+import {cn} from "@/lib/utils.ts";
 
 interface ItineraryTabProps {
     trip: Trip;
@@ -28,6 +29,7 @@ interface ItineraryTabProps {
     onEditActivity: (dayNumber: number, activity: Activity, index: number) => void;
     onDeleteActivity: (dayNumber: number, index: number) => void;
     getFormattedDate: (dayNumber: number) => string;
+    isOwner: boolean;
 }
 
 export function ItineraryTab({
@@ -40,7 +42,8 @@ export function ItineraryTab({
                                  onAddActivity,
                                  onEditActivity,
                                  onDeleteActivity,
-                                 getFormattedDate
+                                 getFormattedDate,
+                                 isOwner
                              }: ItineraryTabProps) {
 
     if (isGenerating) return <AIStatusLoading />;
@@ -66,9 +69,11 @@ export function ItineraryTab({
         <div className="space-y-6 pb-12">
             <div className="flex items-center justify-between px-2">
                 <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Cronograma Consolidado</h3>
-                <Button onClick={onAddDay} variant="ghost" size="sm" className="cursor-pointer text-primary text-[10px] font-black uppercase hover:bg-primary/10 tracking-widest h-8 px-3 rounded-lg">
-                    <Plus size={14} className="mr-1" /> Add Dia
-                </Button>
+                {isOwner && (
+                    <Button onClick={onAddDay} variant="ghost" size="sm" className="cursor-pointer text-primary text-[10px] font-black uppercase hover:bg-primary/10 tracking-widest h-8 px-3 rounded-lg">
+                        <Plus size={14} className="mr-1" /> Add Dia
+                    </Button>
+                )}
             </div>
 
             <div className="space-y-4">
@@ -99,31 +104,43 @@ export function ItineraryTab({
                                 </button>
                             </CollapsibleTrigger>
 
-                            <div className="flex items-center gap-1">
-                                <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-primary rounded-xl"
-                                        onClick={(e) => { e.stopPropagation(); onEditDay(day); }}>
-                                    <Edit2 size={14} />
-                                </Button>
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-destructive rounded-xl">
-                                            <Trash2 size={14} />
-                                        </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent className="bg-card border-border/40 rounded-[32px] w-[90vw] max-w-[350px] p-6 shadow-2xl">
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle className="font-black uppercase tracking-widest text-[10px] text-muted-foreground text-center">
-                                                Excluir Dia {day.dayNumber}?
-                                            </AlertDialogTitle>
-                                        </AlertDialogHeader>
-                                        <p className="text-center text-xs font-bold uppercase py-2">Todo o roteiro deste dia será perdido.</p>
-                                        <AlertDialogFooter className="grid grid-cols-2 gap-3 mt-4">
-                                            <AlertDialogCancel className="text-[10px] font-black uppercase tracking-widest h-12 rounded-2xl border-border/40">Voltar</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => onDeleteDay(day.dayNumber)} className="bg-destructive text-white text-[10px] font-black uppercase tracking-widest h-12 rounded-2xl">Excluir</AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            </div>
+                            {isOwner && (
+                                <div className="flex items-center gap-1">
+                                    <Button variant="ghost" size="icon"
+                                            className="h-9 w-9 text-muted-foreground hover:text-primary rounded-xl"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onEditDay(day);
+                                            }}>
+                                        <Edit2 size={14}/>
+                                    </Button>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="ghost" size="icon"
+                                                    className="h-9 w-9 text-muted-foreground hover:text-destructive rounded-xl">
+                                                <Trash2 size={14}/>
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent
+                                            className="bg-card border-border/40 rounded-[32px] w-[90vw] max-w-[350px] p-6 shadow-2xl">
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle
+                                                    className="font-black uppercase tracking-widest text-[10px] text-muted-foreground text-center">
+                                                    Excluir Dia {day.dayNumber}?
+                                                </AlertDialogTitle>
+                                            </AlertDialogHeader>
+                                            <p className="text-center text-xs font-bold uppercase py-2">Todo o roteiro
+                                                deste dia será perdido.</p>
+                                            <AlertDialogFooter className="grid grid-cols-2 gap-3 mt-4">
+                                                <AlertDialogCancel
+                                                    className="text-[10px] font-black uppercase tracking-widest h-12 rounded-2xl border-border/40">Voltar</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => onDeleteDay(day.dayNumber)}
+                                                                   className="bg-destructive text-white text-[10px] font-black uppercase tracking-widest h-12 rounded-2xl">Excluir</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </div>
+                            )}
                         </div>
 
                         <CollapsibleContent className="animate-in fade-in slide-in-from-top-1 duration-300 overflow-visible">
@@ -133,15 +150,18 @@ export function ItineraryTab({
                                 {day.activities && day.activities.length > 0 ? (
                                     <div className="grid gap-3">
                                         {day.activities.map((act, idx) => {
-                                            // Lógica para pegar o ícone selecionado ou MapPin padrão
                                             const IconComponent = (Icons as any)[(act as any).iconId] || MapPin;
 
                                             return (
                                                 <div
                                                     key={idx}
-                                                    onClick={() => onEditActivity(day.dayNumber, act, idx)}
-                                                    className="group relative flex items-center gap-4 p-4 rounded-2xl bg-background/40 border border-border/20 hover:border-primary/40 hover:bg-background/60 transition-all cursor-pointer active:scale-[0.98]"
-                                                >
+                                                    onClick={() => isOwner && onEditActivity(day.dayNumber, act, idx)}
+                                                    className={cn(
+                                                        "group relative flex items-center gap-4 p-4 rounded-2xl bg-background/40 border border-border/20 transition-all",
+                                                        isOwner
+                                                            ? "cursor-pointer hover:border-primary/40 hover:bg-background/60 active:scale-[0.98]"
+                                                            : "cursor-default"
+                                                    )}                                                >
                                                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted/10 text-primary group-hover:bg-primary/10 transition-colors">
                                                         <IconComponent size={18} strokeWidth={2.5} />
                                                     </div>
@@ -155,18 +175,19 @@ export function ItineraryTab({
                                                             {act.title}
                                                         </p>
                                                     </div>
-
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="absolute right-3 top-1/2 -translate-y-1/2 h-8 w-8 text-destructive/30 hover:text-destructive hover:bg-destructive/10 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            onDeleteActivity(day.dayNumber, idx);
-                                                        }}
-                                                    >
-                                                        <Trash2 size={14} />
-                                                    </Button>
+                                                    {isOwner && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="absolute right-3 top-1/2 -translate-y-1/2 h-8 w-8 text-destructive/30 hover:text-destructive hover:bg-destructive/10 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                onDeleteActivity(day.dayNumber, idx);
+                                                            }}
+                                                        >
+                                                            <Trash2 size={14}/>
+                                                        </Button>
+                                                    )}
                                                 </div>
                                             );
                                         })}
@@ -176,14 +197,15 @@ export function ItineraryTab({
                                         <p className="text-[9px] font-black text-muted-foreground/40 uppercase tracking-[0.2em]">Nenhuma atividade programada</p>
                                     </div>
                                 )}
-
-                                <Button
-                                    onClick={() => onAddActivity(day.dayNumber)}
-                                    variant="outline"
-                                    className="w-full h-12 text-[10px] font-black uppercase tracking-[0.2em] gap-3 border-dashed border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary rounded-2xl transition-all"
-                                >
-                                    <Plus size={14} strokeWidth={3} /> Nova Atividade
-                                </Button>
+                                {isOwner && (
+                                    <Button
+                                        onClick={() => onAddActivity(day.dayNumber)}
+                                        variant="outline"
+                                        className="w-full h-12 text-[10px] font-black uppercase tracking-[0.2em] gap-3 border-dashed border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary rounded-2xl transition-all"
+                                    >
+                                        <Plus size={14} strokeWidth={3}/> Nova Atividade
+                                    </Button>
+                                )}
                             </div>
                         </CollapsibleContent>
                     </Collapsible>
