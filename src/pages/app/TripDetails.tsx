@@ -44,6 +44,7 @@ import {MembersTab} from "./tabs/MembersTab";
 import {ManageExpenseModal} from "@/components/features/ManageExpenseModal.tsx";
 import {useAuthStore} from "@/store/useAuthStore.ts";
 import {useTripStore} from "@/store/useTripStore";
+import {useRole} from "@/hooks/useRole.ts";
 
 export function TripDetails() {
     const { id } = useParams();
@@ -60,7 +61,7 @@ export function TripDetails() {
     const [activeDayForActivity, setActiveDayForActivity] = useState<number | null>(null);
     const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
 
-    const isOwner = !!trip?.ownerIds?.includes(user?.uid || "");
+    const { isTripOwner: isOwner } = useRole(trip);
 
     useEffect(() => {
         if (!id || authLoading) return;
@@ -436,7 +437,7 @@ export function TripDetails() {
 
                 {isOwner && (
                     <TabsContent value="members" className="outline-none focus:ring-0">
-                        <MembersTab trip={trip} onAddGhost={handleAddGhost} onRemoveMember={handleRemoveMember} onLinkMember={handleLinkMember} />
+                        <MembersTab trip={trip} onAddGhost={handleAddGhost} onRemoveMember={handleRemoveMember} onLinkMember={handleLinkMember} isOwner={isOwner} />
                     </TabsContent>
                 )}
             </Tabs>

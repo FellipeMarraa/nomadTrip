@@ -1,5 +1,5 @@
 import { useAuthStore } from '@/store/useAuthStore';
-import type {Trip} from '@/types';
+import type { Trip } from '@/types';
 
 export function useRole(trip?: Trip | null) {
     const { user } = useAuthStore();
@@ -7,11 +7,11 @@ export function useRole(trip?: Trip | null) {
     const isGlobalAdmin = user?.role === 'ADMIN_GLOBAL';
     const isUserPro = user?.role === 'PRO';
 
-    const isTripPro = trip?.isPro || false;
+    const isTripPro = !!trip?.isPro;
 
     const hasProAccess = isGlobalAdmin || isUserPro || isTripPro;
 
-    const isTripOwner = trip?.ownerId === user?.uid;
+    const isTripOwner = !!trip?.ownerIds?.includes(user?.uid || "");
 
     return {
         isGlobalAdmin,
